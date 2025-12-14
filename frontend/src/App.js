@@ -21,10 +21,13 @@ function App() {
     formData.append("positive_order_threshold", threshold);
 
     try {
-      const response = await fetch("http://localhost:5000/process", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "https://search-term-analyzer-2.onrender.com/process",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -45,7 +48,9 @@ function App() {
       <header className="app-header">
         <div className="header-content">
           <h1>Search Term Analyzer</h1>
-          <p className="subtitle">Optimize your ad campaigns with intelligent keyword analysis</p>
+          <p className="subtitle">
+            Optimize your ad campaigns with intelligent keyword analysis
+          </p>
         </div>
       </header>
 
