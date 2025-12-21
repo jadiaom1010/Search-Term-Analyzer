@@ -1,90 +1,49 @@
-import React, { useRef } from "react";
+import React from 'react';
+import { Upload } from 'lucide-react';
 
-function FileUploadSection({ onProcess, threshold, setThreshold, loading }) {
-  const searchFileRef = useRef(null);
-  const targetingFileRef = useRef(null);
-
-  const handleUpload = () => {
-    const searchFile = searchFileRef.current?.files?.[0];
-    const targetingFile = targetingFileRef.current?.files?.[0];
-
-    if (!searchFile || !targetingFile) {
-      alert("Please select both files");
-      return;
-    }
-
-    onProcess(searchFile, targetingFile);
-  };
-
+const FileUploadSection = ({ searchFile, targetingFile, onSearchFileChange, onTargetingFileChange }) => {
   return (
-    <section className="upload-section">
-      <div className="upload-container">
-        <div className="upload-grid">
-          {/* Search File Upload */}
-          <div className="upload-box">
-            <label htmlFor="search-file" className="upload-label">
-              <div className="upload-icon">📄</div>
-              <span className="label-text">Search Terms File</span>
-              <span className="label-hint">Excel or CSV</span>
-            </label>
-            <input
-              id="search-file"
-              type="file"
-              ref={searchFileRef}
-              accept=".xlsx,.xls,.csv"
-              disabled={loading}
-            />
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <FileUploadBox
+        label="Search Terms File"
+        file={searchFile}
+        onChange={onSearchFileChange}
+        description="Excel file (.xlsx)"
+      />
 
-          {/* Targeting File Upload */}
-          <div className="upload-box">
-            <label htmlFor="targeting-file" className="upload-label">
-              <div className="upload-icon">🎯</div>
-              <span className="label-text">Targeting File</span>
-              <span className="label-hint">Excel or CSV</span>
-            </label>
-            <input
-              id="targeting-file"
-              type="file"
-              ref={targetingFileRef}
-              accept=".xlsx,.xls,.csv"
-              disabled={loading}
-            />
-          </div>
-        </div>
-
-        {/* Threshold Control */}
-        <div className="threshold-control">
-          <label htmlFor="threshold" className="threshold-label">
-            Minimum Order Threshold
-          </label>
-          <input
-            id="threshold"
-            type="number"
-            min="0"
-            max="100"
-            value={threshold}
-            onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
-            disabled={loading}
-            className="threshold-input"
-            placeholder="Enter minimum orders"
-          />
-          <div className="threshold-hint">
-            Only keywords with at least {threshold} order{threshold !== 1 ? "s" : ""} will be considered positive
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleUpload}
-          disabled={loading}
-          className="submit-btn"
-        >
-          {loading ? "Processing..." : "Analyze Keywords"}
-        </button>
-      </div>
-    </section>
+      <FileUploadBox
+        label="Targeting File"
+        file={targetingFile}
+        onChange={onTargetingFileChange}
+        description="Excel file (.xlsx)"
+      />
+    </div>
   );
-}
+};
+
+const FileUploadBox = ({ label, file, onChange, description }) => {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-3">
+        {label}
+      </label>
+      <label className="flex items-center justify-center w-full px-6 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+        <div className="text-center">
+          <Upload size={24} className="mx-auto mb-2 text-gray-500 group-hover:text-blue-600 transition-colors" />
+          <p className="text-sm font-medium text-gray-700">
+            {file ? file.name : 'Click to upload'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">{description}</p>
+        </div>
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={onChange}
+          className="hidden"
+        />
+      </label>
+    </div>
+  );
+};
 
 export default FileUploadSection;

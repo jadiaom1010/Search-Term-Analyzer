@@ -1,110 +1,162 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
-function DataTable({ data, type, onCopyCell, copiedCell }) {
-  const [sortConfig, setSortConfig] = useState({ key: "sales", direction: "desc" });
+const DataTable = ({ title, data, category, bgColor, sortConfig, onSort }) => {
+  const [displayLimit, setDisplayLimit] = useState(10);
+  const [customLimit, setCustomLimit] = useState('');
 
-  const sortedData = [...data].sort((a, b) => {
-    const key = sortConfig.key;
-    const aVal = a[key];
-    const bVal = b[key];
-
-    if (typeof aVal === "number") {
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    }
-
-    return sortConfig.direction === "asc"
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
-  });
-
-  const handleSort = (key) => {
-    setSortConfig({
-      key,
-      direction:
-        sortConfig.key === key && sortConfig.direction === "desc"
-          ? "asc"
-          : "desc",
-    });
-  };
-
-  const formatNumber = (num) => {
-    if (typeof num !== "number") return num;
-    return num.toLocaleString();
-  };
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg p-8 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">{title}</h3>
+        <p className="text-gray-500">No results</p>
+      </div>
+    );
+  }
 
   const columns = [
-    { key: "customer search term", label: "Search Term", sortable: true, width: "200px" },
-    { key: "campaign name", label: "Campaign", sortable: true, width: "150px" },
-    { key: "ad group name", label: "Ad Group", sortable: true, width: "150px" },
-    { key: "match type", label: "Match Type", sortable: true, width: "100px" },
-    { key: "14 day total orders (#)", label: "Orders", sortable: true, width: "80px" },
-    { key: "14 day total sales", label: "Sales", sortable: true, width: "100px" },
-    { key: "spend", label: "Spend", sortable: true, width: "100px" },
-    { key: "impressions", label: "Impressions", sortable: true, width: "100px" },
-    { key: "clicks", label: "Clicks", sortable: true, width: "80px" },
+    'customer search term',
+    'campaign name',
+    'ad group name',
+    'match type',
+    '14 day total orders (#)',
+    '14 day total sales',
+    'spend',
+    'acos',
+    'impressions',
+    'clicks',
   ];
 
-  return (
-    <div className="table-wrapper">
-      <table className="data-table">
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                onClick={() => col.sortable && handleSort(col.key)}
-                className={col.sortable ? "sortable" : ""}
-                style={{ width: col.width }}
-              >
-                <div className="th-content">
-                  {col.label}
-                  {col.sortable && (
-                    <span className="sort-indicator">
-                      {sortConfig.key === col.key &&
-                        (sortConfig.direction === "asc" ? "↑" : "↓")}
-                    </span>
-                  )}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedData.map((row, idx) => (
-            <tr key={idx} className={`row-${type}`}>
-              {columns.map((col) => {
-                const cellId = `${idx}-${col.key}`;
-                const isCopied = copiedCell === cellId;
-                const cellValue = row[col.key];
-                const isSearchTerm = col.key === "customer search term";
+  const sortedData = getSortedData(data, sortConfig, category);
+  const displayedData = sortedData.slice(0, displayLimit);
 
-                return (
-                  <td
-                    key={col.key}
-                    style={{ width: col.width }}
-                    className={`${isSearchTerm ? "search-term-cell" : ""} ${
-                      isCopied ? "copied" : ""
-                    }`}
-                    onClick={() => isSearchTerm && onCopyCell(cellValue, cellId)}
-                    title={isSearchTerm ? "Click to copy" : ""}
-                  >
-                    <div className="cell-content">
-                      {typeof cellValue === "number"
-                        ? formatNumber(cellValue)
-                        : cellValue}
-                      {isSearchTerm && isCopied && (
-                        <span className="copy-indicator">✓ Copied!</span>
-                      )}
-                    </div>
-                  </td>
-                );
-              })}
+  const handleCustomLimitChange = () => {
+    const num = parseInt(customLimit);
+    if (!isNaN(num) && num > 0) {
+      setDisplayLimit(num);
+      setCustomLimit('');
+    }
+  };
+
+  const formatValue = (val, col) => {
+    if (col === 'acos' && val) return `${val}%`;
+    if (['14 day total sales', 'spend'].includes(col)) return val.toLocaleString();
+    if (['impressions', 'clicks', '14 day total orders (#)'].includes(col))
+      return val.toLocaleString();
+    return val;
+  };
+
+  return (
+    <div className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+      <div className={`${bgColor} px-6 py-4 border-b border-gray-200`}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Showing {displayedData.length} of {sortedData.length} results
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <select
+                value={displayLimit}
+                onChange={(e) => setDisplayLimit(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={250}>250</option>
+                <option value={500}>500</option>
+              </select>
+            </div>
+            <span className="text-sm text-gray-600">or</span>
+            <div className="flex gap-1">
+              <input
+                type="number"
+                min="1"
+                placeholder="Custom"
+                value={customLimit}
+                onChange={(e) => setCustomLimit(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleCustomLimitChange();
+                }}
+                className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleCustomLimitChange}
+                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50">
+              {columns.map((col) => (
+                <th
+                  key={col}
+                  onClick={() => onSort(col, category)}
+                  className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-2">
+                    {col}
+                    {sortConfig.category === category && sortConfig.field === col && (
+                      <ChevronDown
+                        size={16}
+                        className={`transform transition-transform ${
+                          sortConfig.direction === 'desc' ? 'rotate-180' : ''
+                        }`}
+                      />
+                    )}
+                  </div>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {displayedData.map((row, idx) => (
+              <tr key={idx} className="border-b border-gray-200 hover:bg-blue-50 transition-colors">
+                {columns.map((col) => (
+                  <td key={col} className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    {formatValue(row[col], col)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-}
+};
+
+const getSortedData = (data, sortConfig, category) => {
+  if (!data || data.length === 0 || sortConfig.category !== category) return data;
+
+  const sorted = [...data].sort((a, b) => {
+    const aVal = a[sortConfig.field];
+    const bVal = b[sortConfig.field];
+
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+
+    const aStr = String(aVal).toLowerCase();
+    const bStr = String(bVal).toLowerCase();
+    return sortConfig.direction === 'asc'
+      ? aStr.localeCompare(bStr)
+      : bStr.localeCompare(aStr);
+  });
+
+  return sorted;
+};
 
 export default DataTable;
