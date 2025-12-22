@@ -12,7 +12,7 @@ const FileUploadSection = ({ searchFile, targetingFile, onSearchFileChange, onTa
       />
 
       <FileUploadBox
-        label="Targeting File"
+        label="Targeting File / Keyword File"
         file={targetingFile}
         onChange={onTargetingFileChange}
         description="Excel file (.xlsx)"

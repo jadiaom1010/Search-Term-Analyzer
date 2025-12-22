@@ -17,6 +17,11 @@ const SearchTermAnalyzer = () => {
     field: 'customer search term',
     direction: 'asc',
   });
+  // ACOS Filter States
+  const [acosFilter, setAcosFilter] = useState({
+    filterType: 'none', // 'none', 'greater', 'less', 'equal'
+    value: '',
+  });
 
   const BACKEND_URL = 'http://localhost:5000';
 
@@ -115,6 +120,43 @@ const SearchTermAnalyzer = () => {
     }));
   };
 
+  // Apply ACOS filter to positive results only
+  const getFilteredResults = () => {
+    if (!results || acosFilter.filterType === 'none') {
+      return results;
+    }
+
+    const filterValue = parseFloat(acosFilter.value);
+    if (isNaN(filterValue)) return results;
+
+    const filterPositive = (items) => {
+      return items.filter((item) => {
+        if (item.acos === null || item.acos === undefined) return false;
+        
+        switch (acosFilter.filterType) {
+          case 'greater':
+            return item.acos > filterValue;
+          case 'less':
+            return item.acos < filterValue;
+          case 'equal':
+            return item.acos === filterValue;
+          default:
+            return true;
+        }
+      });
+    };
+
+    return {
+      positive: {
+        no_b0: filterPositive(results.positive.no_b0),
+        only_b0: filterPositive(results.positive.only_b0),
+      },
+      negative: results.negative,
+    };
+  };
+
+  const displayResults = getFilteredResults();
+
   const isDisabled = !searchFile || !targetingFile;
 
   return (
@@ -135,22 +177,60 @@ const SearchTermAnalyzer = () => {
             />
           </div>
 
-          {/* Threshold Input */}
-          <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Positive Order Threshold
-            </label>
-            <div className="flex items-center gap-4">
-              <input
-                type="number"
-                min="0"
-                value={threshold}
-                onChange={(e) => setThreshold(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-20 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-sm text-gray-600">
-                Keywords with at least this many orders are marked as positive
-              </p>
+          {/* Threshold Input and ACOS Filter - Same Row */}
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Positive Order Threshold */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Positive Order Threshold
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  value={threshold}
+                  onChange={(e) => setThreshold(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-20 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-600">
+                  Orders to mark as positive
+                </p>
+              </div>
+            </div>
+
+            {/* ACOS Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                🎯 ACOS Filter
+              </label>
+              <div className="flex items-center gap-3">
+                <select
+                  value={acosFilter.filterType}
+                  onChange={(e) => setAcosFilter({ ...acosFilter, filterType: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-blue-400 transition-colors"
+                >
+                  <option value="none">No Filter</option>
+                  <option value="greater">Greater Than</option>
+                  <option value="less">Less Than</option>
+                  <option value="equal">Equals To</option>
+                </select>
+
+                {acosFilter.filterType !== 'none' && (
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="Value"
+                    value={acosFilter.value}
+                    onChange={(e) => setAcosFilter({ ...acosFilter, value: e.target.value })}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-blue-400 transition-colors"
+                  />
+                )}
+
+                {acosFilter.filterType === 'none' && (
+                  <p className="text-xs text-gray-500">Positive keywords only</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -187,7 +267,7 @@ const SearchTermAnalyzer = () => {
 
         {/* Results Section */}
         {results && !loading && (
-          <ResultsSection results={results} sortConfig={sortConfig} onSort={handleSort} />
+          <ResultsSection results={displayResults} sortConfig={sortConfig} onSort={handleSort} />
         )}
 
         {/* Empty State */}
@@ -200,36 +280,36 @@ const SearchTermAnalyzer = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-t border-slate-700 mt-auto">
+      <footer className="bg-gradient-to-r from-blue-50 via-white to-blue-50 border-t border-blue-100 mt-auto">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
-              <h3 className="text-white font-bold text-lg mb-3">⚡ Search Term Analyzer</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-gray-900 font-bold text-lg mb-3">⚡ Search Term Analyzer</h3>
+              <p className="text-gray-700 text-sm">
                 Because manually scrolling through 1000+ keywords is for people who hate themselves 😅
               </p>
             </div>
             <div>
-              <h3 className="text-white font-bold text-lg mb-3">🎯 What We Do</h3>
-              <p className="text-slate-400 text-sm">
-                We turn data chaos into keyword gold. It's like having a crystal ball, but actually works.
+              <h3 className="text-gray-900 font-bold text-lg mb-3">🎯 What We Do</h3>
+              <p className="text-gray-700 text-sm">
+                We turn data chaos into keyword gold.
               </p>
             </div>
             <div>
-              <h3 className="text-white font-bold text-lg mb-3">🚀 Pro Tip</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-gray-900 font-bold text-lg mb-3">🚀 Pro Tip</h3>
+              <p className="text-gray-700 text-sm">
                 Our algorithm is powered by coffee, stubbornness, and a tiny bit of magic ✨
               </p>
             </div>
           </div>
 
-          <div className="border-t border-slate-700 pt-8">
+          <div className="border-t border-blue-100 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-slate-400 text-sm">
+              <div className="text-gray-700 text-sm">
                 <p>💡 "Keywords don't lie, they just sometimes hide" - Someone Smart Probably</p>
               </div>
-              <div className="text-right text-slate-500 text-xs" >
-                <p>Made with ❤️ and way too much caffeine</p>
+              <div className="text-right text-gray-600 text-xs">
+                <p>Made with Om and way too much caffeine</p>
                 <p>© 2024 Search Term Analyzer™ </p>
               </div>
             </div>
