@@ -179,7 +179,7 @@ def download_excel():
         neg_b0[SEARCH_TERM_COL] = neg_b0[SEARCH_TERM_COL].str.upper()
 
         output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
             pos_non_b0.to_excel(writer, sheet_name="Positive Non-B0", index=False)
             pos_b0.to_excel(writer, sheet_name="Positive B0", index=False)
             neg_non_b0.to_excel(writer, sheet_name="Negative Non-B0", index=False)
