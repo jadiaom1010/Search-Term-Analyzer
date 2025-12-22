@@ -18,7 +18,7 @@ const SearchTermAnalyzer = () => {
     direction: 'asc',
   });
 
-  const BACKEND_URL = 'http://localhost:5000';
+  const BACKEND_URL = 'https://search-term-analyzer-2.onrender.com';
 
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
