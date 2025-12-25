@@ -568,7 +568,7 @@ const SearchTermAnalyzer = () => {
                 <p>💡 "Keywords don't lie, they just sometimes hide" - Someone Smart Probably</p>
               </div>
               <div className="text-right text-gray-600 text-xs">
-                <p>Made with Om and way too much caffeine</p>
+                <p>Made by Om and way too much caffeine</p>
                 <p>© 2024 Search Term Analyzer™ </p>
               </div>
             </div>
