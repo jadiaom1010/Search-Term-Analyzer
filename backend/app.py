@@ -5,14 +5,7 @@ from io import BytesIO
 import re
 
 app = Flask(__name__)
-
-# Configure CORS with explicit allowed origins
-CORS(app, 
-     origins=["https://search-term-analyzer-frontend.vercel.app", "http://localhost:3000"],
-     methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-     allow_headers=["Content-Type"],
-     supports_credentials=True,
-     max_age=3600)
+CORS(app)
 
 # ============= CONSTANTS =============
 SEARCH_TERM_COL = "customer search term"
@@ -216,9 +209,12 @@ def format_records_display(df):
 def health():
     return "Backend running"
 
-@app.route("/process", methods=["POST"])
+@app.route("/process", methods=["POST", "OPTIONS"])
 def process_files():
     """Main processing endpoint"""
+    if request.method == "OPTIONS":
+        return "", 200
+    
     try:
         product_type = request.form.get("product_type", "").lower()
         
@@ -295,9 +291,12 @@ def process_files():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/download", methods=["POST"])
+@app.route("/download", methods=["POST", "OPTIONS"])
 def download_excel():
     """Download results as Excel file"""
+    if request.method == "OPTIONS":
+        return "", 200
+    
     try:
         product_type = request.form.get("product_type", "").lower()
         output = BytesIO()
