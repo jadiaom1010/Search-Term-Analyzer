@@ -5,7 +5,14 @@ from io import BytesIO
 import re
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
+
+# Configure CORS with explicit allowed origins
+CORS(app, 
+     origins=["https://search-term-analyzer-frontend.vercel.app", "http://localhost:3000"],
+     methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+     allow_headers=["Content-Type"],
+     supports_credentials=True,
+     max_age=3600)
 
 # ============= CONSTANTS =============
 SEARCH_TERM_COL = "customer search term"
