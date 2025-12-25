@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const DataTable = ({ title, data, category, bgColor, sortConfig, onSort }) => {
+const DataTable = ({ title, data, category, bgColor, sortConfig, onSort, productType }) => {
   const [displayLimit, setDisplayLimit] = useState(10);
   const [customLimit, setCustomLimit] = useState('');
 
@@ -14,18 +14,40 @@ const DataTable = ({ title, data, category, bgColor, sortConfig, onSort }) => {
     );
   }
 
-  const columns = [
-    'customer search term',
-    'campaign name',
-    'ad group name',
-    'match type',
-    '14 day total orders (#)',
-    '14 day total sales',
-    'spend',
-    'acos',
-    'impressions',
-    'clicks',
-  ];
+  // Determine which columns to show based on product type
+  const getColumns = (type) => {
+    if (type === "display") {
+      // For Sponsored Display - use matched target instead of search term
+      return [
+        'matched target',
+        'campaign name',
+        'ad group name',
+        'match type',
+        '14 day total orders (#)',
+        '14 day total sales',
+        'total advertiser cost',
+        'acos',
+        'impressions',
+        'clicks',
+      ];
+    } else {
+      // For Sponsored Products & Brands - use customer search term
+      return [
+        'customer search term',
+        'campaign name',
+        'ad group name',
+        'match type',
+        '14 day total orders (#)',
+        '14 day total sales',
+        'spend',
+        'acos',
+        'impressions',
+        'clicks',
+      ];
+    }
+  };
+
+  const columns = getColumns(productType || "products");
 
   const sortedData = getSortedData(data, sortConfig, category);
   const displayedData = sortedData.slice(0, displayLimit);
@@ -39,10 +61,31 @@ const DataTable = ({ title, data, category, bgColor, sortConfig, onSort }) => {
   };
 
   const formatValue = (val, col) => {
-    if (col === 'acos' && val) return `${val}%`;
-    if (['14 day total sales', 'spend'].includes(col)) return val.toLocaleString();
-    if (['impressions', 'clicks', '14 day total orders (#)'].includes(col))
-      return val.toLocaleString();
+    // Handle ACOS - show the value with % sign, or dash if null/undefined
+    if (col === 'acos') {
+      if (val === null || val === undefined || val === 'null') {
+        return '-';
+      }
+      return `${val}%`;
+    }
+    
+    // Handle numeric columns with thousand separators
+    const numericColumns = [
+      '14 day total sales',
+      'spend',
+      'total advertiser cost',
+      'impressions',
+      'clicks',
+      '14 day total orders (#)'
+    ];
+    
+    if (numericColumns.includes(col)) {
+      if (val === null || val === undefined) return '-';
+      return Number(val).toLocaleString();
+    }
+    
+    // Handle other columns
+    if (val === null || val === undefined) return '-';
     return val;
   };
 
@@ -144,6 +187,10 @@ const getSortedData = (data, sortConfig, category) => {
   const sorted = [...data].sort((a, b) => {
     const aVal = a[sortConfig.field];
     const bVal = b[sortConfig.field];
+
+    // Handle null/undefined values
+    if (aVal === null || aVal === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
+    if (bVal === null || bVal === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
 
     if (typeof aVal === 'number' && typeof bVal === 'number') {
       return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;

@@ -1,21 +1,30 @@
 import React from 'react';
 import { Upload } from 'lucide-react';
 
-const FileUploadSection = ({ searchFile, targetingFile, onSearchFileChange, onTargetingFileChange }) => {
+const FileUploadSection = ({ 
+  searchFile, 
+  targetingFile, 
+  onSearchFileChange, 
+  onTargetingFileChange,
+  firstFileLabel = "Search Terms File",
+  secondFileLabel = "Targeting File / Keyword File",
+  firstFileDescription = "Upload your search term report",
+  secondFileDescription = "Upload your targeting/keyword file"
+}) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <FileUploadBox
-        label="Search Terms File"
+        label={firstFileLabel}
         file={searchFile}
         onChange={onSearchFileChange}
-        description="Excel file (.xlsx)"
+        description={firstFileDescription}
       />
 
       <FileUploadBox
-        label="Targeting File / Keyword File"
+        label={secondFileLabel}
         file={targetingFile}
         onChange={onTargetingFileChange}
-        description="Excel file (.xlsx)"
+        description={secondFileDescription}
       />
     </div>
   );
