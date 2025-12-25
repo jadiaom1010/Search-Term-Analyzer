@@ -34,7 +34,7 @@ const SearchTermAnalyzer = () => {
   const [displayAcosFilter, setDisplayAcosFilter] = useState({ filterType: 'none', value: '' });
   const [displaySortConfig, setDisplaySortConfig] = useState({ category: null, field: 'matched target', direction: 'asc' });
 
-  const BACKEND_URL = 'http://localhost:5000';
+  const BACKEND_URL = 'https://search-term-analyzer-3.onrender.com';
 
   // Product type configurations
   const productTypeConfig = {
