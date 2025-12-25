@@ -5,7 +5,7 @@ from io import BytesIO
 import re
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
 
 # ============= CONSTANTS =============
 SEARCH_TERM_COL = "customer search term"
