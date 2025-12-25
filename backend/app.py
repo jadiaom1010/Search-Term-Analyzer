@@ -5,7 +5,14 @@ from io import BytesIO
 import re
 
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS with explicit allowed origins
+CORS(app, 
+     origins=["https://search-term-analyzer-frontend.vercel.app", "http://localhost:3000"],
+     methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+     allow_headers=["Content-Type"],
+     supports_credentials=True,
+     max_age=3600)
 
 # ============= CONSTANTS =============
 SEARCH_TERM_COL = "customer search term"
@@ -105,9 +112,6 @@ def prepare_data_display(matched_target_file, targeting_file):
     matched_target_df.columns = matched_target_df.columns.str.strip().str.lower()
     targeting_df.columns = targeting_df.columns.str.strip().str.lower()
     
-    print(f"DEBUG Display: Matched target columns: {matched_target_df.columns.tolist()}")
-    print(f"DEBUG Display: Targeting columns: {targeting_df.columns.tolist()}")
-    
     # Convert numeric columns
     for col in ['total advertiser cost', '14 day total sales', '14 day total orders (#)', 'impressions', 'clicks']:
         if col in matched_target_df.columns:
@@ -117,7 +121,6 @@ def prepare_data_display(matched_target_file, targeting_file):
     if 'targeting' in targeting_df.columns:
         targeting_df['extracted_asin'] = targeting_df['targeting'].apply(extract_asin_from_targeting)
     else:
-        print(f"ERROR: 'targeting' column not found in targeting file. Available: {targeting_df.columns.tolist()}")
         raise ValueError("Targeting file must have a 'targeting' column")
     
     targeting_df = targeting_df[targeting_df['extracted_asin'].notna()].copy()
@@ -125,20 +128,14 @@ def prepare_data_display(matched_target_file, targeting_file):
     # Lookup: Match ASINs
     matched_target_df['matched target'] = matched_target_df['matched target'].astype(str).str.strip().str.lower()
     
-    print(f"DEBUG Display: Merging on matched_target_df['matched target'] with targeting_df['extracted_asin']")
     result_df = matched_target_df.merge(
         targeting_df[['extracted_asin', 'targeting']],
         left_on='matched target',
         right_on='extracted_asin',
-        how='left'  # This keeps N/A values where no match is found
+        how='left'
     )
     
-    print(f"DEBUG Display: After merge, columns: {result_df.columns.tolist()}")
-    print(f"DEBUG Display: Result shape: {result_df.shape}")
-    
     # After merge, the targeting from targeting_file becomes 'targeting_y'
-    # because matched_target_file already had 'targeting' column (becomes 'targeting_x')
-    # So we check 'targeting_y' for N/A values
     result_df = result_df[result_df['targeting_y'].isna()].copy()
     
     # ===== ACOS CALCULATION FOR DISPLAY =====
@@ -156,7 +153,7 @@ def prepare_data_display(matched_target_file, targeting_file):
     
     # Sort by spend (largest first) and take top 20%
     negative_df = negative_df.sort_values('total advertiser cost', ascending=False)
-    top_20_percent_count = max(1, int(len(negative_df) * 0.2))  # At least 1 record
+    top_20_percent_count = max(1, int(len(negative_df) * 0.2))
     negative_df = negative_df.head(top_20_percent_count)
     
     # Split by B0/non-B0 (ASIN starts with B0)
@@ -164,13 +161,6 @@ def prepare_data_display(matched_target_file, targeting_file):
     pos_b0 = positive_df[positive_df['matched target'].str.startswith("b0")]
     neg_non_b0 = negative_df[~negative_df['matched target'].str.startswith("b0")]
     neg_b0 = negative_df[negative_df['matched target'].str.startswith("b0")]
-    
-    print(f"DEBUG Display: pos_non_b0 shape: {pos_non_b0.shape}")
-    print(f"DEBUG Display: pos_b0 shape: {pos_b0.shape}")
-    print(f"DEBUG Display: pos_b0 matched targets: {pos_b0['matched target'].tolist()}")
-    print(f"DEBUG Display: neg_non_b0 shape: {neg_non_b0.shape}")
-    print(f"DEBUG Display: neg_b0 shape: {neg_b0.shape}")
-    print(f"DEBUG Display: neg_b0 matched targets: {neg_b0['matched target'].tolist()}")
     
     return pos_non_b0, pos_b0, neg_non_b0, neg_b0
 
@@ -232,25 +222,14 @@ def process_files():
     try:
         product_type = request.form.get("product_type", "").lower()
         
-        # Log what files we received
-        print(f"DEBUG: Received files: {request.files.keys()}")
-        print(f"DEBUG: Received product_type: {product_type}")
-        
         # Handle both naming conventions
-        # SP/SB sends: search_file + targeting_file
-        # SD sends: matched_target_file + targeting_file
-        # But frontend might send either for SD
-        
         search_or_matched_file = None
         targeting_file_obj = None
         
-        # Get the files regardless of naming
         if "search_file" in request.files:
             search_or_matched_file = request.files["search_file"]
-            print(f"DEBUG: Found search_file")
         elif "matched_target_file" in request.files:
             search_or_matched_file = request.files["matched_target_file"]
-            print(f"DEBUG: Found matched_target_file")
         
         if "targeting_file" in request.files:
             targeting_file_obj = request.files["targeting_file"]
@@ -260,28 +239,17 @@ def process_files():
         
         # Auto-detect product type if not provided
         if not product_type:
-            # Check file contents to detect type
             try:
-                import pandas as pd
-                # Read the file to check columns
                 test_df = pd.read_excel(search_or_matched_file)
-                
-                # If it has 'matched target' column (case-insensitive check), it's Display
                 cols_lower = [col.lower() for col in test_df.columns]
                 if 'matched target' in cols_lower:
                     product_type = "display"
-                    print(f"DEBUG: Detected Display (has 'matched target' column)")
                 elif 'customer search term' in cols_lower:
                     product_type = "products"
-                    print(f"DEBUG: Detected Products (has 'customer search term' column)")
                 else:
-                    product_type = "products"  # default
-                    print(f"DEBUG: Could not detect, defaulting to products")
+                    product_type = "products"
             except Exception as e:
-                print(f"DEBUG: Auto-detection error: {e}")
-                product_type = "products"  # default
-        
-        print(f"DEBUG: Detected product_type: {product_type}")
+                product_type = "products"
         
         if product_type in ["products", "brands"]:
             threshold = int(request.form.get("positive_order_threshold", 1))
@@ -322,13 +290,10 @@ def process_files():
             })
         
         else:
-            return jsonify({"error": "Invalid product_type. Use 'products', 'brands', or 'display'"}), 400
+            return jsonify({"error": "Invalid product_type"}), 400
     
     except Exception as e:
-        print(f"ERROR in /process: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"Backend error: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/download", methods=["POST"])
 def download_excel():
@@ -356,20 +321,14 @@ def download_excel():
         if not product_type:
             try:
                 test_df = pd.read_excel(search_or_matched_file)
-                
-                # Case-insensitive column check
                 cols_lower = [col.lower() for col in test_df.columns]
                 if 'matched target' in cols_lower:
                     product_type = "display"
-                    print(f"DEBUG Download: Detected Display")
                 elif 'customer search term' in cols_lower:
                     product_type = "products"
-                    print(f"DEBUG Download: Detected Products")
                 else:
                     product_type = "products"
-                    print(f"DEBUG Download: Defaulting to Products")
             except Exception as e:
-                print(f"DEBUG Download: Auto-detection error: {e}")
                 product_type = "products"
         
         if product_type in ["products", "brands"]:
