@@ -286,4 +286,4 @@ This tool is for informational purposes only. Always verify results before makin
 
 **Made with ☕ caffeine and 🚀 stubbornness**
 
-© 2024 Search Term Analyzer™. All rights reserved.
+© 2025 Search Term Analyzer™. All rights reserved.
