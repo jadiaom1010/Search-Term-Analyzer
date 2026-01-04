@@ -569,7 +569,7 @@ const SearchTermAnalyzer = () => {
               </div>
               <div className="text-right text-gray-600 text-xs">
                 <p>Made by Om and way too much caffeine</p>
-                <p>© 2024 Search Term Analyzer™ </p>
+                <p>© 2025 Search Term Analyzer™ </p>
               </div>
             </div>
           </div>
